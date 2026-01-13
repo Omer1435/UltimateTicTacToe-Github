@@ -122,4 +122,3 @@ public class MiniBoard extends JPanel {
         if (!available.isEmpty()) available.get(new Random().nextInt(available.size())).doClick();
     }
 }
-

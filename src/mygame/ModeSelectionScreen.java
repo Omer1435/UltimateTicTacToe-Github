@@ -32,7 +32,6 @@ public class ModeSelectionScreen extends JFrame {
             new GameWindow(manager);
         });
         add(pvpBtn);
-
         setVisible(true);
     }
 }
