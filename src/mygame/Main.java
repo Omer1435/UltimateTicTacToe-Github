@@ -6,4 +6,3 @@ public class Main {
         });
     }
 }
-//Pls worj
