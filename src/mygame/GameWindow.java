@@ -55,7 +55,7 @@ public class GameWindow extends JFrame {
 
     public void makeAIMove() {
         Timer timer = new Timer(500, e -> {
-            manager.makeEasyAIMove(this);
+            manager.makeAIMove(this);
         });
         timer.setRepeats(false);
         timer.start();

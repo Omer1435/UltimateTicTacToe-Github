@@ -28,15 +28,14 @@ public class MiniBoard extends JPanel {
             final int index = i;
 
             button.addActionListener(e -> {
-                // Fix: If the current mini-board is not valid (full or won), reset to free move
                 if (!manager.isValidNextBoard(window)) {
-                    manager.setNextActiveBoard(-1, -1);  // Allow move anywhere
+                    manager.setNextActiveBoard(-1, -1);
                     window.updateActiveBoardHighlight();
                 }
 
                 boolean isActive = manager.isMiniBoardActive(this.row, this.col);
                 if (button.getText().equals("") && !isWon && isActive && !manager.isGameOver()) {
-                    mygame.Player current = manager.getCurrentPlayer();
+                    Player current = manager.getCurrentPlayer();
                     button.setText(current.toString());
                     button.setEnabled(false);
 
@@ -47,12 +46,12 @@ public class MiniBoard extends JPanel {
                         for (JButton b : buttons) b.setEnabled(false);
                         manager.markMiniBoardWinner(row, col, current);
 
-                        mygame.Player gameWinner = manager.checkUltimateWinner();
+                        Player gameWinner = manager.checkUltimateWinner();
                         if (gameWinner != Player.EMPTY) {
                             manager.setGameOver(true);
 
                             boolean ai = window.isCurrentPlayerAI();
-                            boolean isPlayerWinner = gameWinner == Player.X; // assume X is human in PvE
+                            boolean isPlayerWinner = gameWinner == Player.X;
 
                             String endMessage = ai
                                     ? (isPlayerWinner ? "Congrats! You win!" : "Better luck next time!")
@@ -94,7 +93,10 @@ public class MiniBoard extends JPanel {
     public boolean checkWinner(Player player) {
         String mark = player.toString();
         String[][] grid = new String[3][3];
-        for (int i = 0; i < 9; i++) grid[i / 3][i % 3] = buttons[i].getText();
+
+        for (int i = 0; i < 9; i++) {
+            grid[i / 3][i % 3] = buttons[i].getText();
+        }
 
         for (int i = 0; i < 3; i++) {
             if (mark.equals(grid[i][0]) && mark.equals(grid[i][1]) && mark.equals(grid[i][2])) return true;
@@ -105,8 +107,27 @@ public class MiniBoard extends JPanel {
                 || (mark.equals(grid[0][2]) && mark.equals(grid[1][1]) && mark.equals(grid[2][0]));
     }
 
+    // ===== THIS IS THE ADDED METHOD =====
+    public JButton getWinningMove(Player player) {
+        for (int i = 0; i < 9; i++) {
+            JButton btn = buttons[i];
+            if (btn.getText().equals("")) {
+
+                btn.setText(player.toString());
+                boolean win = checkWinner(player);
+                btn.setText("");
+
+                if (win) return btn;
+            }
+        }
+        return null;
+    }
+    // ==================================
+
     public boolean isFull() {
-        for (JButton b : buttons) if (b.getText().equals("")) return false;
+        for (JButton b : buttons) {
+            if (b.getText().equals("")) return false;
+        }
         return true;
     }
 
@@ -119,6 +140,8 @@ public class MiniBoard extends JPanel {
         for (JButton b : buttons) {
             if (b.getText().equals("")) available.add(b);
         }
-        if (!available.isEmpty()) available.get(new Random().nextInt(available.size())).doClick();
+        if (!available.isEmpty()) {
+            available.get(new Random().nextInt(available.size())).doClick();
+        }
     }
 }

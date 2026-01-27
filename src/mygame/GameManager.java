@@ -1,5 +1,6 @@
 package mygame;
 
+import javax.swing.*;
 import java.util.*;
 
 public class GameManager {
@@ -21,6 +22,16 @@ public class GameManager {
             for (int j = 0; j < 3; j++)
                 boardWinners[i][j] = mygame.Player.EMPTY;
     }
+    private String aiDifficulty = "easy"; //default
+
+    public void setAIDifficulty(String difficulty) {
+        this.aiDifficulty = difficulty;
+    }
+
+    public String getAIDifficulty() {
+        return aiDifficulty;
+    }
+
 
     public mygame.Player getCurrentPlayer() { return currentPlayer; }
     public void switchTurn() { currentPlayer = (currentPlayer == mygame.Player.X) ? mygame.Player.O : mygame.Player.X; }
@@ -62,6 +73,38 @@ public class GameManager {
 
         return mygame.Player.EMPTY;
     }
+    private List<MiniBoard> getPlayableBoards(GameWindow window) {
+        List<MiniBoard> boards = new ArrayList<>();
+
+        if (activeMiniRow != -1 && activeMiniCol != -1) {
+            MiniBoard forced = window.getMiniBoard(activeMiniRow, activeMiniCol);
+            if (forced != null && !forced.isFull() && !forced.isWon()) {
+                boards.add(forced);
+                return boards;
+            }
+        }
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                MiniBoard mb = window.getMiniBoard(i, j);
+                if (!mb.isFull() && !mb.isWon()) {
+                    boards.add(mb);
+                }
+            }
+        }
+
+        return boards;
+    }
+
+    private void makeRandomMove(GameWindow window) {
+        List<MiniBoard> boards = getPlayableBoards(window);
+        if (boards.isEmpty()) return;
+
+        Random rand = new Random();
+        MiniBoard board = boards.get(rand.nextInt(boards.size()));
+        board.makeRandomAIMove(this, window);
+    }
+
 
     public boolean isGameOver() { return gameOver; }
     public void setGameOver(boolean state) { gameOver = state; }
@@ -69,8 +112,52 @@ public class GameManager {
     public void setAIEnabled(boolean enabled) { isAIEnabled = enabled; }
     public boolean isAIEnabled() { return isAIEnabled; }
 
-    public void makeEasyAIMove(mygame.GameWindow window) {
+    void makeMediumMove(GameWindow window) {
+        // 1. Get all playable mini-boards
+        List<MiniBoard> boards = getPlayableBoards(window);
+
+        // 2. Check each board for winning move
+        for (MiniBoard mb : boards) {
+            JButton winButton = mb.getWinningMove(Player.O);
+            if (winButton != null) {
+                winButton.doClick();
+                return;
+            }
+        }
+
+        // 3. Check each board for blocking move
+        for (MiniBoard mb : boards) {
+            JButton blockButton = mb.getWinningMove(Player.X);
+            if (blockButton != null) {
+                blockButton.doClick();
+                return;
+            }
+        }
+
+        // 4. Otherwise random move
+        makeRandomMove(window);
+    }
+
+    private void makeHardMove(GameWindow window) {
+        // placeholder hard AI
+        makeMediumMove(window);
+    }
+
+
+    public void makeAIMove(mygame.GameWindow window) {
         if (!isAIEnabled || gameOver || currentPlayer != mygame.Player.O) return;
+
+        switch (aiDifficulty.toLowerCase()){
+            case "easy":
+                makeRandomMove(window);
+                break;
+            case "medium":
+                makeMediumMove(window);
+                break;
+            case "hard":
+                makeHardMove(window);
+                break;
+        }
 
         Random rand = new Random();
         List<mygame.MiniBoard> availableBoards = new ArrayList<>();
@@ -91,9 +178,9 @@ public class GameManager {
 
         if (availableBoards.isEmpty()) return;
 
-        mygame.MiniBoard boardToPlay = (activeMiniRow != -1) ? window.getMiniBoard(activeMiniRow, activeMiniCol)
-                : availableBoards.get(rand.nextInt(availableBoards.size()));
+        MiniBoard boardToPlay = availableBoards.get(rand.nextInt(availableBoards.size()));
 
         boardToPlay.makeRandomAIMove(this, window);
+
     }
 }
