@@ -4,11 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 
 public class GameWindow extends JFrame {
-    private MiniBoard[][] miniBoards = new MiniBoard[3][3];
-    private GameManager manager;
+
+    private final MiniBoard[][] miniBoards = new MiniBoard[3][3];
+    private final GameManager manager;
 
     public GameWindow(GameManager manager) {
         this.manager = manager;
+        manager.setWindow(this);
 
         setTitle("Ultimate Tic Tac Toe");
         setSize(600, 600);
@@ -16,48 +18,43 @@ public class GameWindow extends JFrame {
         setLocationRelativeTo(null);
 
         JPanel boardPanel = new JPanel(new GridLayout(3, 3));
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++) {
                 miniBoards[i][j] = new MiniBoard(i, j, manager, this);
                 boardPanel.add(miniBoards[i][j]);
             }
-        }
 
         add(boardPanel);
         setVisible(true);
         updateActiveBoardHighlight();
 
-        if (isCurrentPlayerAI()) {
-            makeAIMove();
-        }
+        if (isCurrentPlayerAI()) makeAIMove();
     }
 
-    public MiniBoard getMiniBoard(int row, int col) {
-        return miniBoards[row][col];
+    public MiniBoard getMiniBoard(int r, int c) {
+        return miniBoards[r][c];
     }
 
-    public void updateActiveBoardHighlight() {
-        int activeRow = manager.getActiveMiniRow();
-        int activeCol = manager.getActiveMiniCol();
-
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                MiniBoard mb = miniBoards[i][j];
-                boolean shouldHighlight = manager.isMiniBoardActive(i, j);
-                mb.setHighlight(shouldHighlight);
-            }
-        }
+    public GameManager getManager() {
+        return manager;
     }
 
     public boolean isCurrentPlayerAI() {
         return manager.isAIEnabled() && manager.getCurrentPlayer() == Player.O;
     }
 
+    public void updateActiveBoardHighlight() {
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                miniBoards[i][j].setHighlight(manager.isMiniBoardActive(i, j));
+    }
+
     public void makeAIMove() {
-        Timer timer = new Timer(500, e -> {
+        Timer t = new Timer(500, e -> {
             manager.makeAIMove(this);
+            updateActiveBoardHighlight();
         });
-        timer.setRepeats(false);
-        timer.start();
+        t.setRepeats(false);
+        t.start();
     }
 }

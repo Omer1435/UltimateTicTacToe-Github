@@ -3,6 +3,7 @@ package mygame;
 import javax.swing.*;
 import java.awt.*;
 
+// Screen to select game mode: PvP or PvAI
 public class ModeSelectionScreen extends JFrame {
 
     public ModeSelectionScreen() {
@@ -20,7 +21,7 @@ public class ModeSelectionScreen extends JFrame {
         aiBtn.setFont(new Font("Arial", Font.PLAIN, 18));
         aiBtn.addActionListener(e -> {
             dispose();
-            new MainMenu();
+            new MainMenu(); // difficulty selection
         });
         add(aiBtn);
 
@@ -28,10 +29,11 @@ public class ModeSelectionScreen extends JFrame {
         pvpBtn.setFont(new Font("Arial", Font.PLAIN, 18));
         pvpBtn.addActionListener(e -> {
             dispose();
-            GameManager manager = new GameManager();
+            GameManager manager = new GameManager(); // AI disabled by default
             new GameWindow(manager);
         });
         add(pvpBtn);
+
         setVisible(true);
     }
 }

@@ -4,36 +4,49 @@ import javax.swing.*;
 import java.awt.*;
 
 public class EndGameScreen extends JFrame {
-    public EndGameScreen(String message, GameManager oldManager, boolean isAIEnabled) {
+
+    public EndGameScreen(String msg, GameManager manager, boolean ai) {
+
         setTitle("Game Over");
-        setSize(350, 200);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setSize(320, 220);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout());
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        JLabel resultLabel = new JLabel(message, SwingConstants.CENTER);
-        resultLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        add(resultLabel, BorderLayout.CENTER);
+        JLabel label = new JLabel(msg, SwingConstants.CENTER);
+        label.setFont(new Font("Arial", Font.BOLD, 18));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton restartBtn = new JButton("Restart Match");
-        JButton mainMenuBtn = new JButton("Main Menu");
+        JPanel buttons = new JPanel(new GridLayout(2, 1, 8, 8));
 
-        restartBtn.addActionListener(e -> {
+        JButton restart = new JButton("Restart");
+        JButton menu = new JButton("Main Menu");
+
+        restart.addActionListener(e -> {
+            if (manager.getWindow() != null)
+                manager.getWindow().dispose();
+
             dispose();
-            GameManager manager = new GameManager();
-            manager.setAIEnabled(isAIEnabled);
-            new GameWindow(manager);
+
+            GameManager newManager = new GameManager();
+            newManager.setAIEnabled(manager.isAIEnabled());
+            newManager.setAIDifficulty(manager.isAIEnabled() ? "easy" : "");
+
+            new GameWindow(newManager);
         });
 
-        mainMenuBtn.addActionListener(e -> {
+        menu.addActionListener(e -> {
+            if (manager.getWindow() != null)
+                manager.getWindow().dispose();
+
             dispose();
             new ModeSelectionScreen();
         });
 
-        buttonPanel.add(restartBtn);
-        buttonPanel.add(mainMenuBtn);
-        add(buttonPanel, BorderLayout.SOUTH);
+        buttons.add(restart);
+        buttons.add(menu);
+
+        add(label, BorderLayout.CENTER);
+        add(buttons, BorderLayout.SOUTH);
 
         setVisible(true);
     }

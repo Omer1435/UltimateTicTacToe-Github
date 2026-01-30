@@ -2,83 +2,40 @@ package mygame;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MiniBoard extends JPanel {
-    private JButton[] buttons = new JButton[9];
-    private int row, col;
-    private GameManager manager;
-    private mygame.GameWindow window;
-    private boolean isWon = false;
-    private JLabel winnerLabel;
 
-    public MiniBoard(int row, int col, GameManager manager, mygame.GameWindow window) {
-        this.row = row;
-        this.col = col;
-        this.manager = manager;
-        this.window = window;
+    private final JButton[] buttons = new JButton[9];
+    private final int row, col;
+    private final GameManager manager;
+    private final GameWindow window;
+    private boolean won = false;
+    private final JLabel winnerLabel;
+
+    public MiniBoard(int r, int c, GameManager m, GameWindow w) {
+        row = r;
+        col = c;
+        manager = m;
+        window = w;
 
         setLayout(new OverlayLayout(this));
         JPanel grid = new JPanel(new GridLayout(3, 3));
 
         for (int i = 0; i < 9; i++) {
-            JButton button = new JButton("");
-            button.setFont(new Font("Arial", Font.BOLD, 24));
-            final int index = i;
-
-            button.addActionListener(e -> {
-                if (!manager.isValidNextBoard(window)) {
-                    manager.setNextActiveBoard(-1, -1);
-                    window.updateActiveBoardHighlight();
-                }
-
-                boolean isActive = manager.isMiniBoardActive(this.row, this.col);
-                if (button.getText().equals("") && !isWon && isActive && !manager.isGameOver()) {
-                    Player current = manager.getCurrentPlayer();
-                    button.setText(current.toString());
-                    button.setEnabled(false);
-
-                    if (checkWinner(current)) {
-                        isWon = true;
-                        winnerLabel.setText(current.toString());
-                        winnerLabel.setVisible(true);
-                        for (JButton b : buttons) b.setEnabled(false);
-                        manager.markMiniBoardWinner(row, col, current);
-
-                        Player gameWinner = manager.checkUltimateWinner();
-                        if (gameWinner != Player.EMPTY) {
-                            manager.setGameOver(true);
-
-                            boolean ai = window.isCurrentPlayerAI();
-                            boolean isPlayerWinner = gameWinner == Player.X;
-
-                            String endMessage = ai
-                                    ? (isPlayerWinner ? "Congrats! You win!" : "Better luck next time!")
-                                    : (gameWinner + " wins the game!");
-
-                            new EndGameScreen(endMessage, manager, ai);
-                            return;
-                        }
-                    }
-
-                    manager.setNextActiveBoard(index / 3, index % 3);
-                    manager.switchTurn();
-                    window.updateActiveBoardHighlight();
-
-                    if (!manager.isGameOver() && window.isCurrentPlayerAI()) {
-                        window.makeAIMove();
-                    }
-                }
-            });
-
-            buttons[i] = button;
-            grid.add(button);
+            JButton b = new JButton("");
+            b.setFont(new Font("Arial", Font.BOLD, 24));
+            int idx = i;
+            b.addActionListener(e -> click(b, idx));
+            buttons[i] = b;
+            grid.add(b);
         }
 
         winnerLabel = new JLabel("", SwingConstants.CENTER);
-        winnerLabel.setFont(new Font("Arial", Font.BOLD, 60));
-        winnerLabel.setForeground(new Color(200, 0, 0, 180));
+        winnerLabel.setFont(new Font("Arial", Font.BOLD, 64));
+        winnerLabel.setForeground(new Color(200, 0, 0, 160));
         winnerLabel.setVisible(false);
 
         add(winnerLabel);
@@ -86,62 +43,83 @@ public class MiniBoard extends JPanel {
         setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
     }
 
-    public void setHighlight(boolean highlight) {
-        setBorder(BorderFactory.createLineBorder(highlight ? Color.RED : Color.BLACK, 2));
-    }
+    private void click(JButton b, int idx) {
+        if (manager.isGameOver() || !manager.isMiniBoardActive(row, col) || b.getText().length() > 0 || won)
+            return;
 
-    public boolean checkWinner(Player player) {
-        String mark = player.toString();
-        String[][] grid = new String[3][3];
+        Player p = manager.getCurrentPlayer();
+        b.setText(p.toString());
+        b.setEnabled(false);
 
-        for (int i = 0; i < 9; i++) {
-            grid[i / 3][i % 3] = buttons[i].getText();
+        if (checkWinner(p)) {
+            won = true;
+            winnerLabel.setText(p.toString());
+            winnerLabel.setVisible(true);
+            manager.markMiniBoardWinner(row, col, p);
+            for (JButton x : buttons) x.setEnabled(false);
         }
 
-        for (int i = 0; i < 3; i++) {
-            if (mark.equals(grid[i][0]) && mark.equals(grid[i][1]) && mark.equals(grid[i][2])) return true;
-            if (mark.equals(grid[0][i]) && mark.equals(grid[1][i]) && mark.equals(grid[2][i])) return true;
+        manager.setNextActiveBoard(idx / 3, idx % 3);
+        manager.switchTurn();
+        window.updateActiveBoardHighlight();
+
+        if (window.isCurrentPlayerAI()) {
+            Timer timer = new Timer(300, e -> {
+                manager.makeAIMove(window);
+                window.updateActiveBoardHighlight();
+            });
+            timer.setRepeats(false);
+            timer.start();
         }
 
-        return (mark.equals(grid[0][0]) && mark.equals(grid[1][1]) && mark.equals(grid[2][2]))
-                || (mark.equals(grid[0][2]) && mark.equals(grid[1][1]) && mark.equals(grid[2][0]));
+        if (manager.checkUltimateWinner() != Player.EMPTY || manager.isDraw()) {
+            manager.setGameOver(true);
+            new EndGameScreen("Game Over", manager, manager.isAIEnabled());
+        }
     }
 
-    // ===== THIS IS THE ADDED METHOD =====
-    public JButton getWinningMove(Player player) {
-        for (int i = 0; i < 9; i++) {
-            JButton btn = buttons[i];
-            if (btn.getText().equals("")) {
+    public boolean checkWinner(Player p) {
+        int[][] combos = {
+                {0,1,2},{3,4,5},{6,7,8},
+                {0,3,6},{1,4,7},{2,5,8},
+                {0,4,8},{2,4,6}
+        };
+        for (int[] c : combos)
+            if (p.toString().equals(buttons[c[0]].getText()) &&
+                    p.toString().equals(buttons[c[1]].getText()) &&
+                    p.toString().equals(buttons[c[2]].getText()))
+                return true;
+        return false;
+    }
 
-                btn.setText(player.toString());
-                boolean win = checkWinner(player);
-                btn.setText("");
-
-                if (win) return btn;
+    public boolean playWinningMove(Player p) {
+        for (JButton b : buttons) {
+            if (b.getText().isEmpty()) {
+                b.setText(p.toString());
+                boolean win = checkWinner(p);
+                b.setText("");
+                if (win) {
+                    b.doClick();
+                    return true;
+                }
             }
         }
-        return null;
+        return false;
     }
-    // ==================================
 
-    public boolean isFull() {
-        for (JButton b : buttons) {
-            if (b.getText().equals("")) return false;
-        }
-        return true;
+    public void makeRandomAIMove() {
+        List<JButton> free = new ArrayList<>();
+        for (JButton b : buttons)
+            if (b.getText().isEmpty()) free.add(b);
+        if (!free.isEmpty())
+            free.get(new Random().nextInt(free.size())).doClick();
     }
 
     public boolean isWon() {
-        return isWon;
+        return won;
     }
 
-    public void makeRandomAIMove(GameManager manager, GameWindow window) {
-        List<JButton> available = new ArrayList<>();
-        for (JButton b : buttons) {
-            if (b.getText().equals("")) available.add(b);
-        }
-        if (!available.isEmpty()) {
-            available.get(new Random().nextInt(available.size())).doClick();
-        }
+    public void setHighlight(boolean h) {
+        setBorder(BorderFactory.createLineBorder(h ? Color.RED : Color.BLACK, 2));
     }
 }
